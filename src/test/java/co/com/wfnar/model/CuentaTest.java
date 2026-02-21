@@ -3,6 +3,10 @@ package co.com.wfnar.model;
 import co.com.wfnar.DineroInsuficienteException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -49,46 +53,49 @@ class CuentaTest {
         System.out.println("Finalizando el test");
     }
 
-    @Test
-    @DisplayName("Probando el nombre de la cuenta") //Nombrar prueba
-    void testNombreCuenta() {
-        // Arrange: Preparar el entorno para pruebas. iniciar objetos creación datos de entrada creación de mocks (Dobles de pruebas)
-        Cuenta cuenta = new Cuenta();
-        cuenta.setPersona("Felipe");
-        String esperado = "Felipe";
+    @Nested
+    class CuentaTestNombreSaldo{
+        @Test
+        @DisplayName("Probando el nombre de la cuenta") //Nombrar prueba
+        void testNombreCuenta() {
+            // Arrange: Preparar el entorno para pruebas. iniciar objetos creación datos de entrada creación de mocks (Dobles de pruebas)
+            Cuenta cuenta = new Cuenta();
+            cuenta.setPersona("Felipe");
+            String esperado = "Felipe";
 
-        // Action: Invocar metodo o función a probar
-        String actual = cuenta.getPersona();
+            // Action: Invocar metodo o función a probar
+            String actual = cuenta.getPersona();
 
-        // Assertions: Verificar que la acción reqalizada haya producido el resultadoesperado se comparan valores obtenidos con resultados.
-        assertNotNull(actual, "La cuenta no puede ser nula");
-        assertEquals(esperado, actual, "El nombre de la cuenta no es el que se esperaba");
-        assertTrue(actual.equals("Felipe"), "Nombre de la cuenta esperada debe ser igual a la real");
-    }
+            // Assertions: Verificar que la acción reqalizada haya producido el resultadoesperado se comparan valores obtenidos con resultados.
+            assertNotNull(actual, "La cuenta no puede ser nula");
+            assertEquals(esperado, actual, "El nombre de la cuenta no es el que se esperaba");
+            assertTrue(actual.equals("Felipe"), "Nombre de la cuenta esperada debe ser igual a la real");
+        }
 
-    @Test
-    void testSaldoCuenta() {
-        BigDecimal expected = new BigDecimal("1000.123");
+        @Test
+        void testSaldoCuenta() {
+            BigDecimal expected = new BigDecimal("1000.123");
 
-        BigDecimal saldo = cuenta.getSaldo();
+            BigDecimal saldo = cuenta.getSaldo();
 
-        assertNotNull(saldo);
-        assertEquals(expected, saldo);
-        assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
-        assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+            assertNotNull(saldo);
+            assertEquals(expected, saldo);
+            assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
 
-    }
+        }
 
-    // TEST DRIVEN DEVELOPMENT (TDD) Desarrollo Orientado a Pruebas
+        // TEST DRIVEN DEVELOPMENT (TDD) Desarrollo Orientado a Pruebas
 
 
-    @Test
-    void testReferenciaCuentas() {
-        cuenta = new Cuenta("William", new BigDecimal("1000.123"));
-        Cuenta cuenta2 = new Cuenta("William", new BigDecimal("1000.123"));
+        @Test
+        void testReferenciaCuentas() {
+            cuenta = new Cuenta("William", new BigDecimal("1000.123"));
+            Cuenta cuenta2 = new Cuenta("William", new BigDecimal("1000.123"));
 
 //        assertNotEquals(cuenta2, cuenta);
-        assertEquals(cuenta2, cuenta);
+            assertEquals(cuenta2, cuenta);
+        }
     }
 
     @Nested
@@ -129,8 +136,6 @@ class CuentaTest {
 
         }
     }
-
-
 
     @Test
     void testDineroInsuficienteExceptionCuenta() {
@@ -341,6 +346,83 @@ class CuentaTest {
         assertFalse(cuenta.getSaldo().compareTo(BigDecimal.ZERO) < 0);
         assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
     }
+
+    @DisplayName("Probando Debito Cuenta Repetir!")
+    @RepeatedTest(value=5, name = "{displayName} - Repetición numero {currentRepetition} de {totalRepetitions}")
+    void testDebitoCuentaRepetir() {
+
+        cuenta.debito(new BigDecimal("100"));
+        BigDecimal expected = new BigDecimal("900.123");
+        BigDecimal saldo = cuenta.getSaldo();
+
+        assertNotNull(cuenta.getSaldo());
+        assertEquals(saldo, expected);
+        assertEquals("900.123", cuenta.getSaldo().toPlainString());
+    }
+
+    @Tag("param")
+    @Nested
+    class PruebasParametrizadasTest{
+
+        @ParameterizedTest(name = "numero {index} ejecutando con valor {0} - {argumentsWithNames}")
+        @ValueSource(strings = {"100", "200", "300", "500", "700", "1000.123"})
+        void testDebitoCuentaValueSource(String monto) {
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con valor {0} - {argumentsWithNames}")
+        @CsvSource({"1,100", "2,200", "3,300", "4,500", "5,700", "6,1000.123"})
+        void testDebitoCuentaCsvSource(String index, String monto) {
+            System.out.println(index + " -> " + monto);
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con valor {0} - {argumentsWithNames}")
+        @CsvSource({"200,100,John,Andres", "250,200,Pepe,Pepe", "300,300,maria,Maria", "510,500,Pepa,Pepa", "750,700,Lucas,Luca", "1000.12345,1000.12345,Cata,Cata"})
+        void testDebitoCuentaCsvSource2(String saldo, String monto, String esperado, String actual) {
+            System.out.println(saldo + " -> " + monto);
+            cuenta.setSaldo(new BigDecimal(saldo));
+            cuenta.debito(new BigDecimal(monto));
+            cuenta.setPersona(actual);
+
+            assertNotNull(cuenta.getSaldo());
+            assertNotNull(cuenta.getPersona());
+            assertEquals(esperado, actual);
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con valor {0} - {argumentsWithNames}")
+        @CsvFileSource(resources = "/data.csv")
+        void testDebitoCuentaCsvFileSource(String monto) {
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+        }
+
+        @ParameterizedTest(name = "numero {index} ejecutando con valor {0} - {argumentsWithNames}")
+        @CsvFileSource(resources = "/data2.csv")
+        void testDebitoCuentaCsvFileSource2(String saldo, String monto, String esperado, String actual) {
+            cuenta.setSaldo(new BigDecimal(saldo));
+            cuenta.debito(new BigDecimal(monto));
+            cuenta.setPersona(actual);
+
+            assertNotNull(cuenta.getSaldo());
+            assertNotNull(cuenta.getPersona());
+            assertEquals(esperado, actual);
+
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0);
+        }
+
+    }
+
+
+
+
+
 
 
 }
